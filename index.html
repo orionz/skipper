@@ -6,6 +6,9 @@
 <title>Sparkle Journal</title>
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#ff2d8f">
+<!-- Keeps the site out of search results. A robots.txt would not work here:
+     crawlers only read it at the domain root, not under /skipper/. -->
+<meta name="robots" content="noindex, nofollow, noarchive">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -304,6 +307,12 @@ details.sect[open] > .card{margin-top:0;border-radius:0 0 var(--radius) var(--ra
       <div class="stepper" data-f="fluids"><button data-d="-1">−</button><input type="number" inputmode="numeric" min="0"><button data-d="1">+</button><span class="unit">glasses</span></div>
     </div>
     <div class="field">
+      <label class="lb">Before bed</label>
+      <div class="chips" data-f="bedside">
+        <button class="chip" data-v="morning water by bedside">Put morning water by bedside</button>
+      </div>
+    </div>
+    <div class="field">
       <label class="lb">Salt <small>pills or equivalent</small></label>
       <div class="stepper" data-f="salt"><button data-d="-1">−</button><input type="number" inputmode="numeric" min="0"><button data-d="1">+</button><span class="unit">pills</span></div>
     </div>
@@ -367,6 +376,15 @@ details.sect[open] > .card{margin-top:0;border-radius:0 0 var(--radius) var(--ra
     <div class="hint">If you only fill in one card, make it this one. These are what tell the diagnoses apart.</div>
 
     <div class="field">
+      <label class="lb">Skin</label>
+      <div class="chips" data-f="skin">
+        <button class="chip" data-v="flushing">Flushing</button>
+        <button class="chip" data-v="itching">Itching</button>
+        <button class="chip" data-v="hives">Hives</button>
+        <button class="chip" data-v="none">None of these</button>
+      </div>
+    </div>
+    <div class="field">
       <label class="lb">Head &amp; senses</label>
       <div class="chips" data-f="migraine">
         <button class="chip" data-v="head pain">Head pain</button>
@@ -385,15 +403,6 @@ details.sect[open] > .card{margin-top:0;border-radius:0 0 var(--radius) var(--ra
       </div>
     </div>
 
-    <div class="field">
-      <label class="lb">Skin <small>highest-value field on the form</small></label>
-      <div class="chips" data-f="skin">
-        <button class="chip" data-v="flushing">Flushing</button>
-        <button class="chip" data-v="itching">Itching</button>
-        <button class="chip" data-v="hives">Hives</button>
-        <button class="chip" data-v="none">None of these</button>
-      </div>
-    </div>
 
     <div class="field">
       <label class="lb">Tingling</label>
@@ -881,7 +890,9 @@ function dailyCSV(){
     plain('libido','libido'), plain('sleep_quality','sleepQuality'), plain('sleep_inertia','sleepInertia')
   ];
   flags(cols, 'meds', '', ['iron','allegra','pepcid','gabapentin','lexapro','cannabis']);
-  cols.push(plain('water_glasses','fluids'), plain('salt_pills','salt'), plain('alcohol_drinks','alcohol'),
+  cols.push(plain('water_glasses','fluids'));
+  flags(cols, 'bedside', '', ['morning water by bedside']);
+  cols.push(plain('salt_pills','salt'), plain('alcohol_drinks','alcohol'),
             plain('cycle_day','cycleDay'), plain('notes','notes'), plain('updated_at','updatedAt'));
   var rows = Object.keys(daily).sort().map(function(k){ return Object.assign({_date: k}, daily[k]); });
   return toCSV(cols, rows);
