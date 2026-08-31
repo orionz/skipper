@@ -1,0 +1,946 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>Sparkle Journal</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#ff2d8f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sparkle">
+<link rel="apple-touch-icon" href="./icons/icon-180.png">
+<link rel="icon" href="./icons/icon-192.png">
+<style>
+:root{
+  --pink:#ff2d8f; --pink-lt:#ff6fb5; --deep:#c2185b;
+  --soft:#ffd9ec; --pale:#fff2f8;
+  --bg1:#ffdcef; --bg2:#fff8fc;
+  --card:#ffffff; --line:#ffd0e6;
+  --ink:#40122c; --muted:#a06484;
+  --gold:#ffc94d;
+  --shadow:0 6px 20px rgba(255,45,143,.13);
+  --radius:20px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --pink:#ff54a3; --pink-lt:#ff8cc4; --deep:#ff2d8f;
+    --soft:#5a2044; --pale:#3d1129;
+    --bg1:#2b0c1d; --bg2:#170610;
+    --card:#33102450; --line:#5e2244;
+    --ink:#ffe8f4; --muted:#cf93b4;
+    --shadow:0 6px 20px rgba(0,0,0,.35);
+  }
+  :root{ --card:#331024; }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  font:16px/1.45 -apple-system,'Avenir Next','Segoe UI',system-ui,sans-serif;
+  color:var(--ink);
+  background:linear-gradient(170deg,var(--bg1),var(--bg2) 55%) fixed;
+  min-height:100dvh;
+  -webkit-text-size-adjust:100%;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+
+/* ---------- chrome ---------- */
+header{
+  position:sticky;top:0;z-index:20;
+  padding:calc(env(safe-area-inset-top) + 14px) 18px 12px;
+  background:linear-gradient(180deg,var(--bg1),transparent);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  display:flex;align-items:baseline;gap:10px;
+}
+.wordmark{
+  font-family:'Snell Roundhand','Segoe Script','Brush Script MT',cursive;
+  font-weight:700;font-size:34px;line-height:1;
+  color:var(--pink);
+  text-shadow:0 1px 0 #fff6, 0 2px 10px rgba(255,45,143,.35);
+}
+@media (prefers-color-scheme: dark){ .wordmark{text-shadow:0 2px 14px rgba(255,45,143,.5)} }
+.tag{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:600}
+
+main{padding:4px 16px 120px;max-width:640px;margin:0 auto}
+.screen{display:none;animation:in .22s ease}
+.screen.on{display:block}
+@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+nav{
+  position:fixed;left:0;right:0;bottom:0;z-index:30;
+  display:flex;justify-content:center;gap:6px;
+  padding:8px 10px calc(env(safe-area-inset-bottom) + 8px);
+  background:color-mix(in srgb,var(--bg2) 86%,transparent);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-top:1px solid var(--line);
+}
+nav button{
+  flex:1;max-width:150px;border:0;background:none;padding:8px 4px 6px;border-radius:14px;
+  color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.04em;
+  display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;
+}
+nav button .ic{font-size:20px;line-height:1;filter:grayscale(1) opacity(.55)}
+nav button.on{color:var(--pink);background:var(--pale)}
+nav button.on .ic{filter:none}
+
+/* ---------- cards ---------- */
+.card{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:16px;margin:14px 0;box-shadow:var(--shadow);
+}
+.card > h2{
+  margin:0 0 14px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--pink);font-weight:800;display:flex;align-items:center;gap:7px;
+}
+.card.star{border-color:var(--pink);box-shadow:0 0 0 3px var(--pale),var(--shadow)}
+.hint{font-size:12.5px;color:var(--muted);margin:-6px 0 12px;line-height:1.4}
+.field{margin:0 0 18px}
+.field:last-child{margin-bottom:0}
+label.lb{display:block;font-size:14.5px;font-weight:700;margin:0 0 8px}
+label.lb small{font-weight:500;color:var(--muted);font-size:12.5px;margin-left:6px}
+
+/* ---------- 0-10 scale ---------- */
+.scale{display:flex;gap:4px}
+.scale button{
+  flex:1;min-width:0;height:44px;border-radius:11px;cursor:pointer;
+  border:1px solid var(--line);background:var(--pale);color:var(--muted);
+  font-size:14px;font-weight:700;padding:0;transition:transform .1s,background .12s;
+}
+.scale button.on{
+  background:linear-gradient(180deg,var(--pink-lt),var(--pink));
+  color:#fff;border-color:var(--deep);transform:scale(1.14);
+  box-shadow:0 3px 10px rgba(255,45,143,.45);
+}
+
+/* ---------- chips ---------- */
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{
+  border:1px solid var(--line);background:var(--pale);color:var(--ink);
+  padding:10px 13px;border-radius:999px;font-size:14px;font-weight:600;cursor:pointer;
+  min-height:42px;display:inline-flex;align-items:center;gap:6px;
+}
+.chip.on{background:linear-gradient(180deg,var(--pink-lt),var(--pink));color:#fff;border-color:var(--deep);box-shadow:0 3px 10px rgba(255,45,143,.35)}
+.chip.on::before{content:'✓';font-weight:900;font-size:12px}
+
+/* ---------- steppers & inputs ---------- */
+.stepper{display:flex;align-items:center;gap:10px}
+.stepper button{
+  width:46px;height:46px;border-radius:14px;border:1px solid var(--line);
+  background:var(--pale);color:var(--pink);font-size:24px;font-weight:700;cursor:pointer;line-height:1;
+}
+.stepper button:active{background:var(--soft)}
+.stepper input{
+  width:76px;height:46px;text-align:center;font-size:19px;font-weight:800;
+  border:1px solid var(--line);border-radius:14px;background:var(--card);
+}
+.stepper .unit{font-size:13px;color:var(--muted)}
+input[type=text],input[type=number],input[type=time],input[type=date],textarea{
+  width:100%;padding:12px 13px;border:1px solid var(--line);border-radius:14px;
+  background:var(--card);font-size:16px;
+}
+textarea{min-height:76px;resize:vertical;line-height:1.4}
+input:focus,textarea:focus{outline:2px solid var(--pink);outline-offset:1px}
+.row2{display:flex;gap:10px}
+.row2 > *{flex:1;min-width:0}
+
+/* ---------- buttons ---------- */
+.btn{
+  display:block;width:100%;padding:16px;border:0;border-radius:18px;cursor:pointer;
+  background:linear-gradient(180deg,var(--pink-lt),var(--pink));color:#fff;
+  font-size:17px;font-weight:800;letter-spacing:.02em;
+  box-shadow:0 6px 18px rgba(255,45,143,.4);
+}
+.btn:active{transform:translateY(1px)}
+.btn.ghost{background:var(--card);color:var(--pink);border:1.5px solid var(--pink);box-shadow:none}
+.btn.danger{background:var(--card);color:#c2185b;border:1.5px solid #f0a5c4;box-shadow:none;font-size:15px;padding:13px}
+.btn + .btn{margin-top:10px}
+
+/* ---------- day nav ---------- */
+.daynav{display:flex;align-items:center;gap:10px;margin:10px 0 2px}
+.daynav button{
+  width:44px;height:44px;flex:none;border-radius:14px;border:1px solid var(--line);
+  background:var(--card);color:var(--pink);font-size:20px;cursor:pointer;box-shadow:var(--shadow);
+}
+.daynav button[disabled]{opacity:.3}
+.daynav .d{flex:1;text-align:center}
+.daynav .d b{display:block;font-size:19px;font-weight:800}
+.daynav .d span{font-size:12px;color:var(--muted)}
+
+/* ---------- log list ---------- */
+.seg2{display:flex;gap:6px;background:var(--pale);padding:5px;border-radius:16px;margin:12px 0}
+.seg2 button{flex:1;padding:11px;border:0;border-radius:12px;background:none;color:var(--muted);font-weight:700;font-size:14px;cursor:pointer}
+.seg2 button.on{background:var(--card);color:var(--pink);box-shadow:0 2px 6px rgba(0,0,0,.08)}
+.entry{
+  width:100%;text-align:left;background:var(--card);border:1px solid var(--line);
+  border-radius:16px;padding:13px 14px;margin:0 0 9px;cursor:pointer;box-shadow:var(--shadow);
+  display:flex;align-items:center;gap:12px;
+}
+.entry .when{flex:none;width:56px}
+.entry .when b{display:block;font-size:17px;font-weight:800;line-height:1.1}
+.entry .when span{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.entry .body{flex:1;min-width:0}
+.entry .body .t{font-size:13.5px;font-weight:600;margin-bottom:3px}
+.entry .body .s{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.entry .go{color:var(--pink);font-size:18px;flex:none}
+.pips{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.pip{font-size:11px;font-weight:800;padding:2px 7px;border-radius:8px;background:var(--pale);color:var(--pink);border:1px solid var(--line)}
+.stats{display:flex;gap:9px;margin:12px 0}
+.stat{flex:1;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 10px;text-align:center;box-shadow:var(--shadow)}
+.stat b{display:block;font-size:24px;font-weight:800;color:var(--pink);line-height:1.1}
+.stat span{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;font-weight:700}
+.empty{text-align:center;color:var(--muted);padding:40px 20px;font-size:14px}
+.empty .big{font-size:40px;display:block;margin-bottom:10px}
+
+/* ---------- misc ---------- */
+details.sect{margin:14px 0}
+details.sect > summary{
+  list-style:none;cursor:pointer;padding:14px 16px;background:var(--card);
+  border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);
+  font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:var(--pink);
+  display:flex;justify-content:space-between;align-items:center;
+}
+details.sect > summary::-webkit-details-marker{display:none}
+details.sect > summary::after{content:'▾';transition:transform .2s;font-size:14px}
+details.sect[open] > summary::after{transform:rotate(180deg)}
+details.sect[open] > summary{border-radius:var(--radius) var(--radius) 0 0;border-bottom:0;margin-bottom:0}
+details.sect[open] > .card{margin-top:0;border-radius:0 0 var(--radius) var(--radius)}
+#toast{
+  position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 84px);transform:translate(-50%,20px);
+  background:var(--deep);color:#fff;padding:11px 20px;border-radius:999px;font-size:14px;font-weight:700;
+  opacity:0;pointer-events:none;transition:.25s;z-index:60;box-shadow:0 6px 20px rgba(0,0,0,.3);white-space:nowrap;
+}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+#install{font-size:12.5px;color:var(--muted);text-align:center;padding:14px 10px;line-height:1.5}
+.sparkle{color:var(--gold)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wordmark">Sparkle</div>
+  <div class="tag">Journal</div>
+</header>
+
+<main>
+
+<!-- =============== TODAY =============== -->
+<section id="s-today" class="screen on">
+
+  <div class="daynav">
+    <button id="prevDay" aria-label="Previous day">‹</button>
+    <div class="d"><b id="dayLabel">Today</b><span id="dayDate"></span></div>
+    <button id="nextDay" aria-label="Next day">›</button>
+  </div>
+
+  <div class="card">
+    <h2><span class="sparkle">✦</span> How you felt</h2>
+    <div class="hint">One tap each. Sixty seconds, same time every night.</div>
+
+    <div class="field">
+      <label class="lb">Fatigue <small>0 none · 10 worst</small></label>
+      <div class="scale" data-f="fatigue"></div>
+    </div>
+    <div class="field">
+      <label class="lb">Brain fog <small>0 sharp · 10 foggiest</small></label>
+      <div class="scale" data-f="fog"></div>
+    </div>
+    <div class="field">
+      <label class="lb">Anxiety <small>0 calm · 10 worst</small></label>
+      <div class="scale" data-f="anxiety"></div>
+    </div>
+    <div class="field">
+      <label class="lb">Libido <small>0 none · 10 highest</small></label>
+      <div class="scale" data-f="libido"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🌙 Sleep</h2>
+    <div class="field">
+      <label class="lb">Sleep quality <small>0 awful · 10 perfect</small></label>
+      <div class="scale" data-f="sleepQuality"></div>
+    </div>
+    <div class="field">
+      <label class="lb">Sleep inertia <small>how long to feel awake</small></label>
+      <div class="chips one" data-f="sleepInertia">
+        <button class="chip" data-v="none">None</button>
+        <button class="chip" data-v="15m">15 min</button>
+        <button class="chip" data-v="30m">30 min</button>
+        <button class="chip" data-v="1h">1 hour</button>
+        <button class="chip" data-v="2h">2 hours</button>
+        <button class="chip" data-v="all day">All day</button>
+        <button class="chip" data-v="until gabapentin">Until the gabapentin kicked in</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>💊 Meds &amp; intake</h2>
+    <div class="field">
+      <label class="lb">Taken today</label>
+      <div class="chips" data-f="meds">
+        <button class="chip" data-v="iron">Iron</button>
+        <button class="chip" data-v="allegra">Allegra</button>
+        <button class="chip" data-v="pepcid">Pepcid</button>
+        <button class="chip" data-v="gabapentin">Gabapentin</button>
+        <button class="chip" data-v="lexapro">Lexapro</button>
+        <button class="chip" data-v="cannabis">Cannabis</button>
+      </div>
+    </div>
+    <div class="field">
+      <label class="lb">Water <small>glasses</small></label>
+      <div class="stepper" data-f="fluids"><button data-d="-1">−</button><input type="number" inputmode="numeric" min="0"><button data-d="1">+</button><span class="unit">glasses</span></div>
+    </div>
+    <div class="field">
+      <label class="lb">Salt <small>pills or equivalent</small></label>
+      <div class="stepper" data-f="salt"><button data-d="-1">−</button><input type="number" inputmode="numeric" min="0"><button data-d="1">+</button><span class="unit">pills</span></div>
+    </div>
+    <div class="field">
+      <label class="lb">Alcohol <small>drinks</small></label>
+      <div class="stepper" data-f="alcohol"><button data-d="-1">−</button><input type="number" inputmode="numeric" min="0"><button data-d="1">+</button><span class="unit">drinks</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🎀 Cycle</h2>
+    <div class="field">
+      <label class="lb">Cycle day <small>day 1 = first day of bleeding</small></label>
+      <div class="stepper" data-f="cycleDay"><button data-d="-1">−</button><input type="number" inputmode="numeric" min="0" placeholder="—"><button data-d="1">+</button><span class="unit">day</span></div>
+    </div>
+    <div class="field">
+      <label class="lb">Anything else <small>optional</small></label>
+      <textarea data-f="notes" placeholder="A line or two, only if you feel like it."></textarea>
+    </div>
+  </div>
+
+  <button class="btn" id="doneToday">Done for today ✨</button>
+  <div id="install"></div>
+</section>
+
+<!-- =============== ATTACK =============== -->
+<section id="s-attack" class="screen">
+
+  <div class="card">
+    <h2>⚡ When it started</h2>
+    <div class="field row2">
+      <div><label class="lb">Date</label><input type="date" data-f="date"></div>
+      <div><label class="lb">Onset time</label><input type="time" data-f="onset"></div>
+    </div>
+    <div class="field">
+      <label class="lb">Severity <small>0 mild · 10 worst</small></label>
+      <div class="scale" data-f="severity"></div>
+    </div>
+    <div class="field">
+      <label class="lb">Still going?</label>
+      <div class="chips one" data-f="ongoing">
+        <button class="chip" data-v="yes">Yes, ongoing</button>
+        <button class="chip" data-v="no">It's over</button>
+      </div>
+    </div>
+    <div class="field">
+      <label class="lb">Duration <small>if it's over</small></label>
+      <div class="chips one" data-f="duration">
+        <button class="chip" data-v="<1h">Under 1 hr</button>
+        <button class="chip" data-v="1-6h">1–6 hrs</button>
+        <button class="chip" data-v="6-24h">6–24 hrs</button>
+        <button class="chip" data-v="1-2d">1–2 days</button>
+        <button class="chip" data-v="2-3d">2–3 days</button>
+        <button class="chip" data-v="3d+">Over 3 days</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card star">
+    <h2>💖 The important ones</h2>
+    <div class="hint">If you only fill in one card, make it this one. These are what tell the diagnoses apart.</div>
+
+    <div class="field">
+      <label class="lb">Head &amp; senses</label>
+      <div class="chips" data-f="migraine">
+        <button class="chip" data-v="head pain">Head pain</button>
+        <button class="chip" data-v="light hurts">Light hurts</button>
+        <button class="chip" data-v="sound hurts">Sound hurts</button>
+        <button class="chip" data-v="want dark room">Want a dark room</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="lb">Body restlessness</label>
+      <div class="chips one" data-f="motor">
+        <button class="chip" data-v="pacing">Pacing / can't sit still</button>
+        <button class="chip" data-v="lie still">Want to lie still</button>
+        <button class="chip" data-v="neither">Neither</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="lb">Skin <small>highest-value field on the form</small></label>
+      <div class="chips" data-f="skin">
+        <button class="chip" data-v="flushing">Flushing</button>
+        <button class="chip" data-v="itching">Itching</button>
+        <button class="chip" data-v="hives">Hives</button>
+        <button class="chip" data-v="none">None of these</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="lb">Tingling</label>
+      <div class="chips" data-f="tingling">
+        <button class="chip" data-v="perioral">Around the mouth</button>
+        <button class="chip" data-v="extremity">Hands / feet</button>
+        <button class="chip" data-v="none">None</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="lb">Heart rate <small>lying down, then after 5 min standing</small></label>
+      <div class="row2">
+        <input type="number" inputmode="numeric" data-f="hrLying" placeholder="Lying bpm">
+        <input type="number" inputmode="numeric" data-f="hrStanding" placeholder="Standing bpm">
+      </div>
+    </div>
+    <div class="field">
+      <label class="lb">Blood pressure <small>optional, same two positions</small></label>
+      <div class="row2">
+        <input type="text" data-f="bpLying" placeholder="Lying e.g. 110/70">
+        <input type="text" data-f="bpStanding" placeholder="Standing">
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="lb">Hours since last meal</label>
+      <div class="stepper" data-f="hrsSinceMeal"><button data-d="-1">−</button><input type="number" inputmode="decimal" min="0" placeholder="—"><button data-d="1">+</button><span class="unit">hrs</span></div>
+    </div>
+    <div class="field">
+      <label class="lb">Hours since gabapentin</label>
+      <div class="stepper" data-f="hrsSinceGaba"><button data-d="-1">−</button><input type="number" inputmode="decimal" min="0" placeholder="—"><button data-d="1">+</button><span class="unit">hrs</span></div>
+    </div>
+  </div>
+
+  <details class="sect" open>
+    <summary>Context &amp; triggers</summary>
+    <div class="card">
+      <div class="field">
+        <label class="lb">What were you doing when it started?</label>
+        <div class="chips" data-f="doing">
+          <button class="chip" data-v="standing up">Standing up</button>
+          <button class="chip" data-v="after a meal">After a meal</button>
+          <button class="chip" data-v="after a shower">After a shower</button>
+          <button class="chip" data-v="waking up">Waking up</button>
+          <button class="chip" data-v="asleep">Asleep</button>
+          <button class="chip" data-v="resting">Resting</button>
+          <button class="chip" data-v="exercising">Exercising</button>
+        </div>
+      </div>
+      <div class="field">
+        <label class="lb">Stomach</label>
+        <div class="chips" data-f="gi">
+          <button class="chip" data-v="nausea">Nausea</button>
+          <button class="chip" data-v="vomiting">Vomiting</button>
+        </div>
+      </div>
+      <div class="field">
+        <label class="lb">Temperature</label>
+        <div class="chips" data-f="temp">
+          <button class="chip" data-v="hot">Hot</button>
+          <button class="chip" data-v="cold">Cold</button>
+          <button class="chip" data-v="swinging">Swinging</button>
+        </div>
+      </div>
+      <div class="field">
+        <label class="lb">Heart &amp; breathing</label>
+        <div class="chips" data-f="cardio">
+          <button class="chip" data-v="palpitations">Palpitations</button>
+          <button class="chip" data-v="breathless">Breathless</button>
+          <button class="chip" data-v="chest tightness">Chest tightness</button>
+        </div>
+      </div>
+      <div class="field">
+        <label class="lb">In the 24 hours before</label>
+        <div class="chips" data-f="prior24">
+          <button class="chip" data-v="alcohol">Alcohol</button>
+          <button class="chip" data-v="cannabis">Cannabis</button>
+          <button class="chip" data-v="aged/fermented food">Aged / fermented food</button>
+          <button class="chip" data-v="leftovers">Leftovers</button>
+          <button class="chip" data-v="NSAIDs">NSAIDs</button>
+          <button class="chip" data-v="new medication">A new medication</button>
+          <button class="chip" data-v="heat or hot shower">Heat / hot shower</button>
+          <button class="chip" data-v="exertion">Exertion</button>
+          <button class="chip" data-v="bad sleep">Bad sleep</button>
+          <button class="chip" data-v="emotional load">Emotional load</button>
+        </div>
+      </div>
+      <div class="field">
+        <label class="lb">What helped</label>
+        <div class="chips" data-f="helped">
+          <button class="chip" data-v="cannabis">Cannabis</button>
+          <button class="chip" data-v="lying down">Lying down</button>
+          <button class="chip" data-v="fluids">Fluids</button>
+          <button class="chip" data-v="salt">Salt</button>
+          <button class="chip" data-v="dark room">Dark room</button>
+          <button class="chip" data-v="gabapentin">Gabapentin</button>
+          <button class="chip" data-v="antihistamine">Antihistamine</button>
+          <button class="chip" data-v="nothing">Nothing</button>
+        </div>
+      </div>
+      <div class="field">
+        <label class="lb">Anything else <small>in your own words</small></label>
+        <textarea data-f="notes" placeholder="What it felt like, anything the checkboxes missed."></textarea>
+      </div>
+    </div>
+  </details>
+
+  <button class="btn" id="saveAttack">Save this attack 💖</button>
+  <button class="btn ghost" id="cancelAttack">Cancel</button>
+</section>
+
+<!-- =============== LOG =============== -->
+<section id="s-log" class="screen">
+  <div class="stats">
+    <div class="stat"><b id="stDays">0</b><span>Days logged</span></div>
+    <div class="stat"><b id="stStreak">0</b><span>Day streak</span></div>
+    <div class="stat"><b id="stAttacks">0</b><span>Attacks</span></div>
+  </div>
+
+  <div class="seg2">
+    <button class="on" data-tab="daily">Daily</button>
+    <button data-tab="attacks">Attacks</button>
+  </div>
+
+  <div id="listDaily"></div>
+  <div id="listAttacks" style="display:none"></div>
+
+  <div class="card">
+    <h2>📤 Export</h2>
+    <div class="hint">Spreadsheet-ready. Every checkbox becomes its own column so it can be sorted and filtered.</div>
+    <button class="btn ghost" id="csvDaily">Daily log → CSV</button>
+    <button class="btn ghost" id="csvAttacks">Attack log → CSV</button>
+    <button class="btn ghost" id="backup">Full backup → JSON</button>
+  </div>
+
+  <div class="card">
+    <h2>⚙️ Data</h2>
+    <div class="hint">Everything lives on this phone only. Nothing is uploaded anywhere. Export now and then so it's backed up.</div>
+    <button class="btn danger" id="wipe">Erase all entries</button>
+  </div>
+</section>
+
+</main>
+
+<nav>
+  <button data-go="today" class="on"><span class="ic">🎀</span>Today</button>
+  <button data-go="attack"><span class="ic">⚡</span>Attack</button>
+  <button data-go="log"><span class="ic">📖</span>Log</button>
+</nav>
+
+<div id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ------------------------------------------------------------------ store */
+var K = {daily:'sparkle.daily.v1', attacks:'sparkle.attacks.v1', draft:'sparkle.draft.v1'};
+function load(k, fb){ try{ var r = localStorage.getItem(k); return r ? JSON.parse(r) : fb; }catch(e){ return fb; } }
+function save(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ toast('Storage is full — export a backup'); return false; } }
+var daily   = load(K.daily, {});     // { 'YYYY-MM-DD': {...} }
+var attacks = load(K.attacks, []);   // [ {...} ]
+
+/* ------------------------------------------------------------------ dates */
+function iso(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function parseISO(s){ var p = s.split('-'); return new Date(+p[0], +p[1]-1, +p[2]); }
+function addDays(s, n){ var d = parseISO(s); d.setDate(d.getDate()+n); return iso(d); }
+var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var DAY = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+function pretty(s){ var d = parseISO(s); return DAY[d.getDay()]+', '+MON[d.getMonth()]+' '+d.getDate(); }
+function today(){ return iso(new Date()); }
+
+/* ------------------------------------------------------------------ toast */
+var toastEl = document.getElementById('toast'), toastT;
+function toast(msg){
+  toastEl.textContent = msg; toastEl.classList.add('on');
+  clearTimeout(toastT); toastT = setTimeout(function(){ toastEl.classList.remove('on'); }, 1900);
+}
+
+/* --------------------------------------------------------- generic binder */
+// Builds the 0-10 pill rows once, on load.
+document.querySelectorAll('.scale').forEach(function(el){
+  var h = '';
+  for (var i = 0; i <= 10; i++) h += '<button type="button" data-v="'+i+'">'+i+'</button>';
+  el.innerHTML = h;
+});
+
+function fields(root){ return root.querySelectorAll('[data-f]'); }
+
+// Read every bound control inside `root` into a plain object.
+function readForm(root){
+  var out = {};
+  fields(root).forEach(function(el){
+    var name = el.dataset.f, v;
+    if (el.classList.contains('scale')){
+      var on = el.querySelector('button.on'); v = on ? +on.dataset.v : null;
+    } else if (el.classList.contains('chips')){
+      var sel = [].map.call(el.querySelectorAll('button.on'), function(b){ return b.dataset.v; });
+      v = el.classList.contains('one') ? (sel[0] || null) : sel;
+    } else if (el.classList.contains('stepper')){
+      var n = el.querySelector('input').value.trim(); v = n === '' ? null : +n;
+    } else {
+      v = el.value.trim();
+      if (el.type === 'number') v = v === '' ? null : +v;
+    }
+    out[name] = v;
+  });
+  return out;
+}
+
+// Paint a plain object back onto the bound controls inside `root`.
+function writeForm(root, data){
+  data = data || {};
+  fields(root).forEach(function(el){
+    var v = data[el.dataset.f];
+    if (el.classList.contains('scale')){
+      el.querySelectorAll('button').forEach(function(b){ b.classList.toggle('on', v != null && +b.dataset.v === +v); });
+    } else if (el.classList.contains('chips')){
+      var set = el.classList.contains('one') ? (v ? [v] : []) : (v || []);
+      el.querySelectorAll('button').forEach(function(b){ b.classList.toggle('on', set.indexOf(b.dataset.v) > -1); });
+    } else if (el.classList.contains('stepper')){
+      el.querySelector('input').value = (v == null ? '' : v);
+    } else {
+      el.value = (v == null ? '' : v);
+    }
+  });
+}
+
+// True if the user actually put something in.
+function hasContent(o){
+  return Object.keys(o).some(function(k){
+    var v = o[k];
+    if (v == null || v === '') return false;
+    if (Array.isArray(v)) return v.length > 0;
+    return true;
+  });
+}
+
+/* --------------------------------------------------------- control wiring */
+// One delegated listener covers scales, chips and steppers everywhere.
+document.addEventListener('click', function(e){
+  var btn = e.target.closest('button'); if (!btn) return;
+
+  var scale = btn.parentElement.classList.contains('scale') ? btn.parentElement : null;
+  if (scale){
+    var was = btn.classList.contains('on');
+    scale.querySelectorAll('button').forEach(function(b){ b.classList.remove('on'); });
+    if (!was) btn.classList.add('on');           // tap again to clear
+    return changed(scale);
+  }
+
+  var chips = btn.parentElement.classList.contains('chips') ? btn.parentElement : null;
+  if (chips){
+    if (chips.classList.contains('one')){
+      var on = btn.classList.contains('on');
+      chips.querySelectorAll('button').forEach(function(b){ b.classList.remove('on'); });
+      if (!on) btn.classList.add('on');
+    } else {
+      btn.classList.toggle('on');
+      // "None of these" is exclusive with the rest of its group.
+      if (btn.dataset.v === 'none' && btn.classList.contains('on')){
+        chips.querySelectorAll('button').forEach(function(b){ if (b !== btn) b.classList.remove('on'); });
+      } else if (btn.classList.contains('on')){
+        var none = chips.querySelector('button[data-v="none"]'); if (none) none.classList.remove('on');
+      }
+    }
+    return changed(chips);
+  }
+
+  var step = btn.parentElement.classList.contains('stepper') ? btn.parentElement : null;
+  if (step && btn.dataset.d){
+    var inp = step.querySelector('input');
+    var next = (parseFloat(inp.value) || 0) + parseInt(btn.dataset.d, 10);
+    inp.value = next < 0 ? 0 : next;
+    return changed(step);
+  }
+});
+document.addEventListener('input', function(e){ if (e.target.dataset && e.target.dataset.f) changed(e.target); });
+
+// Anything inside the Today screen autosaves; the attack form keeps a draft.
+function changed(el){
+  if (el.closest('#s-today')) saveDay();
+  else if (el.closest('#s-attack')) save(K.draft, {id: editingId, data: readForm(A)});
+}
+
+/* ------------------------------------------------------------------ today */
+var T = document.getElementById('s-today');
+var cursor = today();
+
+function renderDay(){
+  var lbl = document.getElementById('dayLabel'), sub = document.getElementById('dayDate');
+  if (cursor === today())            lbl.textContent = 'Today';
+  else if (cursor === addDays(today(), -1)) lbl.textContent = 'Yesterday';
+  else                               lbl.textContent = pretty(cursor).split(', ')[0];
+  sub.textContent = pretty(cursor);
+  document.getElementById('nextDay').disabled = (cursor >= today());
+  writeForm(T, daily[cursor]);
+}
+function saveDay(){
+  var d = readForm(T);
+  if (hasContent(d)){ d.updatedAt = new Date().toISOString(); daily[cursor] = d; }
+  else delete daily[cursor];
+  save(K.daily, daily);
+}
+document.getElementById('prevDay').onclick = function(){ cursor = addDays(cursor, -1); renderDay(); };
+document.getElementById('nextDay').onclick = function(){ if (cursor < today()) { cursor = addDays(cursor, 1); renderDay(); } };
+document.getElementById('doneToday').onclick = function(){
+  saveDay();
+  if (!daily[cursor]) return toast('Nothing filled in yet');
+  var s = streak();
+  toast(s > 1 ? s + ' days in a row ✨' : 'Saved ✨');
+};
+
+/* ----------------------------------------------------------------- attack */
+var A = document.getElementById('s-attack');
+var editingId = null;
+
+function newAttack(){
+  var now = new Date();
+  editingId = null;
+  writeForm(A, {date: today(), onset: String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')});
+  localStorage.removeItem(K.draft);
+}
+function editAttack(id){
+  var a = attacks.find(function(x){ return x.id === id; }); if (!a) return;
+  editingId = id; writeForm(A, a); go('attack');
+}
+document.getElementById('saveAttack').onclick = function(){
+  var d = readForm(A);
+  if (!d.date) return toast('Pick a date first');
+  if (editingId){
+    var i = attacks.findIndex(function(x){ return x.id === editingId; });
+    if (i > -1) attacks[i] = Object.assign(attacks[i], d, {updatedAt: new Date().toISOString()});
+  } else {
+    d.id = 'a' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    d.createdAt = new Date().toISOString();
+    attacks.push(d);
+  }
+  save(K.attacks, attacks);
+  localStorage.removeItem(K.draft);
+  editingId = null;
+  toast('Attack saved 💖');
+  go('log'); showTab('attacks');
+};
+document.getElementById('cancelAttack').onclick = function(){
+  if (editingId && confirm('Delete this attack entry?')){
+    attacks = attacks.filter(function(x){ return x.id !== editingId; });
+    save(K.attacks, attacks); toast('Deleted'); localStorage.removeItem(K.draft); editingId = null; return go('log');
+  }
+  localStorage.removeItem(K.draft); editingId = null; newAttack(); go('today');
+};
+
+/* -------------------------------------------------------------------- log */
+function streak(){
+  var d = today(), n = 0;
+  if (!daily[d]) d = addDays(d, -1);          // today not logged yet is still a live streak
+  while (daily[d]){ n++; d = addDays(d, -1); }
+  return n;
+}
+function renderStats(){
+  document.getElementById('stDays').textContent = Object.keys(daily).length;
+  document.getElementById('stStreak').textContent = streak();
+  document.getElementById('stAttacks').textContent = attacks.length;
+}
+function pip(label, v){ return v == null ? '' : '<span class="pip">'+label+' '+v+'</span>'; }
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); }
+function dayCell(dateStr, timeStr){
+  var d = parseISO(dateStr);
+  return '<div class="when"><b>'+d.getDate()+'</b><span>'+MON[d.getMonth()]+(timeStr ? ' '+timeStr : '')+'</span></div>';
+}
+
+function renderLists(){
+  var wrapD = document.getElementById('listDaily');
+  var keys = Object.keys(daily).sort().reverse();
+  wrapD.innerHTML = keys.length ? keys.map(function(k){
+    var e = daily[k];
+    var pips = pip('Fatigue', e.fatigue) + pip('Fog', e.fog) + pip('Anxiety', e.anxiety) + pip('Sleep', e.sleepQuality);
+    var extra = [];
+    if (e.meds && e.meds.length) extra.push(e.meds.join(', '));
+    if (e.cycleDay != null) extra.push('cycle day ' + e.cycleDay);
+    if (e.alcohol) extra.push(e.alcohol + ' drink' + (e.alcohol > 1 ? 's' : ''));
+    if (e.notes) extra.push(e.notes);
+    return '<button class="entry" data-day="'+k+'">'+dayCell(k)+
+      '<div class="body"><div class="t"><div class="pips">'+(pips || '<span class="pip">no scores</span>')+'</div></div>'+
+      '<div class="s">'+esc(extra.join(' · ') || '—')+'</div></div><div class="go">›</div></button>';
+  }).join('') : '<div class="empty"><span class="big">🎀</span>No days logged yet.<br>Fill in tonight and it shows up here.</div>';
+
+  var wrapA = document.getElementById('listAttacks');
+  var sorted = attacks.slice().sort(function(a,b){ return (b.date+(b.onset||'')).localeCompare(a.date+(a.onset||'')); });
+  wrapA.innerHTML = sorted.length ? sorted.map(function(a){
+    var tags = [].concat(a.migraine||[], a.skin||[], a.motor === 'pacing' ? ['pacing'] : [], a.cardio||[]);
+    var bits = [];
+    if (a.duration) bits.push(a.duration);
+    if (a.ongoing === 'yes') bits.push('ongoing');
+    if (a.hrLying != null && a.hrStanding != null) bits.push('HR ' + a.hrLying + '→' + a.hrStanding);
+    if (tags.length) bits.push(tags.join(', '));
+    if (!bits.length && a.notes) bits.push(a.notes);
+    return '<button class="entry" data-attack="'+a.id+'">'+dayCell(a.date, a.onset)+
+      '<div class="body"><div class="t"><div class="pips">'+(a.severity != null ? '<span class="pip">Severity '+a.severity+'</span>' : '<span class="pip">attack</span>')+'</div></div>'+
+      '<div class="s">'+esc(bits.join(' · ') || '—')+'</div></div><div class="go">›</div></button>';
+  }).join('') : '<div class="empty"><span class="big">⚡</span>No attacks logged.<br>Hopefully it stays that way.</div>';
+
+  renderStats();
+}
+document.addEventListener('click', function(e){
+  var row = e.target.closest('.entry'); if (!row) return;
+  if (row.dataset.day){ cursor = row.dataset.day; renderDay(); go('today'); }
+  else editAttack(row.dataset.attack);
+});
+function showTab(which){
+  document.querySelectorAll('.seg2 button').forEach(function(b){ b.classList.toggle('on', b.dataset.tab === which); });
+  document.getElementById('listDaily').style.display   = which === 'daily' ? '' : 'none';
+  document.getElementById('listAttacks').style.display = which === 'attacks' ? '' : 'none';
+}
+document.querySelectorAll('.seg2 button').forEach(function(b){ b.onclick = function(){ showTab(b.dataset.tab); }; });
+
+/* ----------------------------------------------------------------- export */
+function q(v){
+  if (v == null) return '';
+  if (Array.isArray(v)) v = v.join('; ');
+  v = String(v);
+  return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+}
+function toCSV(cols, rows){
+  var out = [cols.map(function(c){ return q(c[0]); }).join(',')];
+  rows.forEach(function(r){ out.push(cols.map(function(c){ return q(c[1](r)); }).join(',')); });
+  return '﻿' + out.join('\r\n') + '\r\n';   // BOM so Excel reads it as UTF-8
+}
+// One 0/1 column per option, so the sheet can be sorted and filtered on it.
+function flags(cols, field, prefix, opts){
+  opts.forEach(function(o){
+    cols.push([prefix + o.replace(/[^a-z0-9]+/gi, '_').toLowerCase(), function(r){
+      return (r[field] || []).indexOf(o) > -1 ? 1 : 0;
+    }]);
+  });
+}
+function plain(name, key){ return [name, function(r){ return r[key]; }]; }
+
+function dailyCSV(){
+  var cols = [
+    ['date', function(r){ return r._date; }],
+    plain('fatigue','fatigue'), plain('brain_fog','fog'), plain('anxiety','anxiety'),
+    plain('libido','libido'), plain('sleep_quality','sleepQuality'), plain('sleep_inertia','sleepInertia')
+  ];
+  flags(cols, 'meds', '', ['iron','allegra','pepcid','gabapentin','lexapro','cannabis']);
+  cols.push(plain('water_glasses','fluids'), plain('salt_pills','salt'), plain('alcohol_drinks','alcohol'),
+            plain('cycle_day','cycleDay'), plain('notes','notes'), plain('updated_at','updatedAt'));
+  var rows = Object.keys(daily).sort().map(function(k){ return Object.assign({_date: k}, daily[k]); });
+  return toCSV(cols, rows);
+}
+
+function attackCSV(){
+  var cols = [ plain('date','date'), plain('onset_time','onset'), plain('severity','severity'),
+               plain('ongoing','ongoing'), plain('duration','duration') ];
+  flags(cols, 'migraine', '', ['head pain','light hurts','sound hurts','want dark room']);
+  cols.push(plain('motor_state','motor'));
+  flags(cols, 'skin', 'skin_', ['flushing','itching','hives','none']);
+  flags(cols, 'tingling', 'tingling_', ['perioral','extremity','none']);
+  cols.push(plain('hr_lying','hrLying'), plain('hr_standing','hrStanding'),
+            plain('bp_lying','bpLying'), plain('bp_standing','bpStanding'),
+            plain('hours_since_meal','hrsSinceMeal'), plain('hours_since_gabapentin','hrsSinceGaba'),
+            plain('at_onset','doing'));
+  flags(cols, 'gi', '', ['nausea','vomiting']);
+  flags(cols, 'temp', 'temp_', ['hot','cold','swinging']);
+  flags(cols, 'cardio', '', ['palpitations','breathless','chest tightness']);
+  flags(cols, 'prior24', 'prior24_', ['alcohol','cannabis','aged/fermented food','leftovers','NSAIDs',
+                                      'new medication','heat or hot shower','exertion','bad sleep','emotional load']);
+  flags(cols, 'helped', 'helped_', ['cannabis','lying down','fluids','salt','dark room','gabapentin','antihistamine','nothing']);
+  cols.push(plain('notes','notes'), plain('logged_at','createdAt'));
+  var rows = attacks.slice().sort(function(a,b){ return (a.date+(a.onset||'')).localeCompare(b.date+(b.onset||'')); });
+  return toCSV(cols, rows);
+}
+
+// Share sheet on a phone (lets her mail it straight to the doctor); download on a computer.
+// Share can fail for reasons we can't predict, so a download always backs it up.
+function deliver(text, filename, mime){
+  var blob = new Blob([text], {type: mime + ';charset=utf-8'});
+  function download(){
+    var url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = filename; document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 1000);
+    toast('Saved ' + filename);
+  }
+  var phone = matchMedia('(pointer: coarse)').matches;
+  var file = null;
+  if (phone){ try { file = new File([blob], filename, {type: mime}); } catch(e){} }
+  if (file && navigator.canShare && navigator.canShare({files: [file]})){
+    navigator.share({files: [file], title: filename}).catch(function(err){
+      if (!err || err.name !== 'AbortError') download();   // don't re-fire if she just cancelled
+    });
+    return;
+  }
+  download();
+}
+function stamp(){ return today(); }
+document.getElementById('csvDaily').onclick = function(){
+  if (!Object.keys(daily).length) return toast('Nothing to export yet');
+  deliver(dailyCSV(), 'daily-log-' + stamp() + '.csv', 'text/csv');
+};
+document.getElementById('csvAttacks').onclick = function(){
+  if (!attacks.length) return toast('No attacks to export');
+  deliver(attackCSV(), 'attack-log-' + stamp() + '.csv', 'text/csv');
+};
+document.getElementById('backup').onclick = function(){
+  deliver(JSON.stringify({version: 1, exported: new Date().toISOString(), daily: daily, attacks: attacks}, null, 2),
+          'sparkle-backup-' + stamp() + '.json', 'application/json');
+};
+document.getElementById('wipe').onclick = function(){
+  if (!confirm('Erase every entry on this phone? Export a backup first — this cannot be undone.')) return;
+  if (!confirm('Really erase everything?')) return;
+  daily = {}; attacks = []; save(K.daily, daily); save(K.attacks, attacks);
+  localStorage.removeItem(K.draft);
+  cursor = today(); renderDay(); renderLists(); toast('All entries erased');
+};
+
+/* -------------------------------------------------------------------- nav */
+function go(which){
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.toggle('on', s.id === 's-' + which); });
+  document.querySelectorAll('nav button').forEach(function(b){ b.classList.toggle('on', b.dataset.go === which); });
+  if (which === 'log') renderLists();
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll('nav button').forEach(function(b){
+  b.onclick = function(){
+    // Leaving a half-filled new attack behind would be worse than keeping the draft.
+    if (b.dataset.go === 'attack' && !document.getElementById('s-attack').classList.contains('on') && !editingId){
+      var d = load(K.draft, null);
+      if (d && !d.id && hasContent(d.data)) writeForm(A, d.data); else newAttack();
+    }
+    go(b.dataset.go);
+  };
+});
+
+/* ------------------------------------------------------------------- boot */
+newAttack();
+var draft = load(K.draft, null);
+if (draft && hasContent(draft.data)){ editingId = draft.id || null; writeForm(A, draft.data); }
+renderDay();
+renderLists();
+
+// Roll the day over if the app was left open past midnight.
+document.addEventListener('visibilitychange', function(){
+  if (document.visibilityState === 'visible' && cursor !== today() && !daily[cursor]){ cursor = today(); renderDay(); }
+});
+
+// Add-to-home-screen nudge, iPhone wording, only while it still applies.
+(function(){
+  var standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  if (standalone) return;
+  var ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  document.getElementById('install').innerHTML = ios
+    ? 'Tap <b>Share</b> ⬆︎ then <b>Add to Home Screen</b> to keep this as an app.'
+    : 'Install this from your browser menu to keep it as an app.';
+})();
+
+if ('serviceWorker' in navigator) window.addEventListener('load', function(){ navigator.serviceWorker.register('./sw.js'); });
+})();
+</script>
+</body>
+</html>
