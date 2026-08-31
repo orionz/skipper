@@ -130,10 +130,13 @@ label.lb small{font-weight:500;color:var(--muted);font-size:12.5px;margin-left:6
   background:var(--pale);color:var(--pink);font-size:24px;font-weight:700;cursor:pointer;line-height:1;
 }
 .stepper button:active{background:var(--soft)}
-.stepper input{
-  width:76px;height:46px;text-align:center;font-size:19px;font-weight:800;
+.stepper input[type=number]{
+  width:76px;flex:none;height:46px;text-align:center;font-size:19px;font-weight:800;
   border:1px solid var(--line);border-radius:14px;background:var(--card);
+  -moz-appearance:textfield;
 }
+.stepper input::-webkit-outer-spin-button,
+.stepper input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .stepper .unit{font-size:13px;color:var(--muted)}
 input[type=text],input[type=number],input[type=time],input[type=date],textarea{
   width:100%;padding:12px 13px;border:1px solid var(--line);border-radius:14px;
