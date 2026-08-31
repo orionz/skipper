@@ -556,7 +556,8 @@ function parseISO(s){ var p = s.split('-'); return new Date(+p[0], +p[1]-1, +p[2
 function addDays(s, n){ var d = parseISO(s); d.setDate(d.getDate()+n); return iso(d); }
 var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 var DAY = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-function pretty(s){ var d = parseISO(s); return DAY[d.getDay()]+', '+MON[d.getMonth()]+' '+d.getDate(); }
+function weekday(s){ return DAY[parseISO(s).getDay()]; }
+function pretty(s){ var d = parseISO(s); return MON[d.getMonth()]+' '+d.getDate(); }
 function today(){ return iso(new Date()); }
 
 /* ------------------------------------------------------------------ toast */
@@ -680,7 +681,7 @@ function renderDay(){
   var lbl = document.getElementById('dayLabel'), sub = document.getElementById('dayDate');
   if (cursor === today())            lbl.textContent = 'Today';
   else if (cursor === addDays(today(), -1)) lbl.textContent = 'Yesterday';
-  else                               lbl.textContent = pretty(cursor).split(', ')[0];
+  else                               lbl.textContent = weekday(cursor);
   sub.textContent = pretty(cursor);
   document.getElementById('nextDay').disabled = (cursor >= today());
   writeForm(T, daily[cursor]);
