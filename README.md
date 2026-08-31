@@ -19,6 +19,28 @@ and so on. On a phone it opens the share sheet; on a computer it downloads.
 `Full backup → JSON` is the round-trippable copy. There is no cloud sync, so export
 periodically — clearing site data or deleting the app loses the entries.
 
+## Keeping the repo private between updates
+
+The installed app does not phone home — the service worker serves the whole shell
+from cache, so it runs fine with the repo private and Pages unpublished. Verified by
+killing the origin and reloading: the app renders and every entry survives.
+
+Two things to know when you flip it back to public to ship an update:
+
+- Making a repo private on a free plan unpublishes Pages. Flipping back to public may
+  need the source re-selecting under Settings -> Pages, or `gh api -X POST
+  repos/orionz/skipper/pages -f "source[branch]=main" -f "source[path]=/"`.
+- The service worker only looks for a new version when the origin is reachable, and
+  cache-first means the new version shows on the *next* load. So she needs to open the
+  app **twice** while the site is public. Flipping back too early leaves her on the old
+  version.
+
+The one thing repo visibility does not protect is her data. iOS caps script-writable
+storage at 7 days of non-use — a home-screen app resets that counter every time it is
+opened, so nightly use keeps it alive, but a week untouched can evict both the cached
+app and every entry. The JSON backup is the only copy that survives that, and it is
+worth exporting after any stretch worth keeping.
+
 ## Publishing
 
 Static files, no build step. Push to `main` and turn on GitHub Pages
