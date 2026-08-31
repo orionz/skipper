@@ -35,11 +35,19 @@ Two things to know when you flip it back to public to ship an update:
   app **twice** while the site is public. Flipping back too early leaves her on the old
   version.
 
-The one thing repo visibility does not protect is her data. iOS caps script-writable
-storage at 7 days of non-use — a home-screen app resets that counter every time it is
-opened, so nightly use keeps it alive, but a week untouched can evict both the cached
-app and every entry. The JSON backup is the only copy that survives that, and it is
-worth exporting after any stretch worth keeping.
+The one thing repo visibility does not protect is her data.
+
+On the 7-day storage cap: it is a Safari rule. It counts days of Safari use in which
+the user did not interact with the site, and evicts script-writable storage after
+seven. A web app added to the home screen is not part of Safari — it gets its own
+storage container and its own counter, which advances only on days the app itself is
+used. Using the app is the interaction that resets it, so the cap does not evict an
+installed app's data. No weekly-use ritual is needed.
+
+What does take the data: deleting the app, wiping or losing the phone, a restore that
+does not carry web app data, or iOS reclaiming storage under pressure. There is one
+copy and it is on that phone. The JSON backup is the only thing that survives any of
+those, and it is the file worth having when this goes to a doctor anyway.
 
 ## Publishing
 
