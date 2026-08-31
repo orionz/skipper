@@ -1,5 +1,5 @@
 // Bump CACHE when index.html changes so phones pick up the new version.
-const CACHE = 'sparkle-v6';
+const CACHE = 'sparkle-v7';
 const SHELL = [
   './', './index.html', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png',

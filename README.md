@@ -29,7 +29,7 @@ Two things to know when you flip it back to public to ship an update:
 
 - Making a repo private on a free plan unpublishes Pages. Flipping back to public may
   need the source re-selecting under Settings -> Pages, or `gh api -X POST
-  repos/orionz/skipper/pages -f "source[branch]=main" -f "source[path]=/"`.
+  repos/orionz/sparkle/pages -f "source[branch]=main" -f "source[path]=/"`.
 - The service worker only looks for a new version when the origin is reachable, and
   cache-first means the new version shows on the *next* load. So she needs to open the
   app **twice** while the site is public. Flipping back too early leaves her on the old
