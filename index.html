@@ -144,8 +144,15 @@ input[type=text],input[type=number],input[type=time],input[type=date],textarea{
 }
 textarea{min-height:76px;resize:vertical;line-height:1.4}
 input:focus,textarea:focus{outline:2px solid var(--pink);outline-offset:1px}
-.row2{display:flex;gap:10px}
-.row2 > *{flex:1;min-width:0}
+.row2{display:flex;gap:10px;flex-wrap:wrap}
+.row2 > *{flex:1 1 140px;min-width:0}
+/* iOS sizes date/time inputs to their content and ignores width:100%, which
+   spills them out of the card. appearance:none lets them shrink; the wrap
+   above stacks them instead of overflowing if they still can't. */
+input[type=date],input[type=time]{
+  -webkit-appearance:none;appearance:none;min-width:0;max-width:100%;
+}
+.chips + input[type=text]{margin-top:8px}
 
 /* ---------- buttons ---------- */
 .btn{
@@ -235,6 +242,7 @@ details.sect[open] > .card{margin-top:0;border-radius:0 0 var(--radius) var(--ra
     <div class="d"><b id="dayLabel">Today</b><span id="dayDate"></span></div>
     <button id="nextDay" aria-label="Next day">›</button>
   </div>
+  <div id="carry" class="hint" style="display:none;text-align:center;margin:10px 2px 0"></div>
 
   <div class="card">
     <h2><span class="sparkle">✦</span> How you felt</h2>
@@ -331,18 +339,11 @@ details.sect[open] > .card{margin-top:0;border-radius:0 0 var(--radius) var(--ra
       <div><label class="lb">Onset time</label><input type="time" data-f="onset"></div>
     </div>
     <div class="field">
-      <label class="lb">Severity <small>0 mild · 10 worst</small></label>
-      <div class="scale" data-f="severity"></div>
+      <label class="lb">Severity <small>1 mild · 10 worst</small></label>
+      <div class="scale" data-min="1" data-f="severity"></div>
     </div>
     <div class="field">
-      <label class="lb">Still going?</label>
-      <div class="chips one" data-f="ongoing">
-        <button class="chip" data-v="yes">Yes, ongoing</button>
-        <button class="chip" data-v="no">It's over</button>
-      </div>
-    </div>
-    <div class="field">
-      <label class="lb">Duration <small>if it's over</small></label>
+      <label class="lb">Duration <small>leave blank if it's still going</small></label>
       <div class="chips one" data-f="duration">
         <button class="chip" data-v="<1h">Under 1 hr</button>
         <button class="chip" data-v="1-6h">1–6 hrs</button>
@@ -350,6 +351,13 @@ details.sect[open] > .card{margin-top:0;border-radius:0 0 var(--radius) var(--ra
         <button class="chip" data-v="1-2d">1–2 days</button>
         <button class="chip" data-v="2-3d">2–3 days</button>
         <button class="chip" data-v="3d+">Over 3 days</button>
+      </div>
+    </div>
+    <div class="field">
+      <label class="lb">Still going?</label>
+      <div class="chips one" data-f="ongoing">
+        <button class="chip" data-v="yes">Yes, ongoing</button>
+        <button class="chip" data-v="no">It's over</button>
       </div>
     </div>
   </div>
@@ -435,6 +443,7 @@ details.sect[open] > .card{margin-top:0;border-radius:0 0 var(--radius) var(--ra
           <button class="chip" data-v="resting">Resting</button>
           <button class="chip" data-v="exercising">Exercising</button>
         </div>
+        <input type="text" data-f="doingOther" placeholder="Or something else…">
       </div>
       <div class="field">
         <label class="lb">Stomach</label>
@@ -486,6 +495,7 @@ details.sect[open] > .card{margin-top:0;border-radius:0 0 var(--radius) var(--ra
           <button class="chip" data-v="antihistamine">Antihistamine</button>
           <button class="chip" data-v="nothing">Nothing</button>
         </div>
+        <input type="text" data-f="helpedOther" placeholder="Or something else…">
       </div>
       <div class="field">
         <label class="lb">Anything else <small>in your own words</small></label>
@@ -570,8 +580,8 @@ function toast(msg){
 /* --------------------------------------------------------- generic binder */
 // Builds the 0-10 pill rows once, on load.
 document.querySelectorAll('.scale').forEach(function(el){
-  var h = '';
-  for (var i = 0; i <= 10; i++) h += '<button type="button" data-v="'+i+'">'+i+'</button>';
+  var h = '', min = +(el.dataset.min || 0);
+  for (var i = min; i <= 10; i++) h += '<button type="button" data-v="'+i+'">'+i+'</button>';
   el.innerHTML = h;
 });
 
@@ -665,7 +675,12 @@ document.addEventListener('click', function(e){
     return changed(step);
   }
 });
-document.addEventListener('input', function(e){ if (e.target.dataset && e.target.dataset.f) changed(e.target); });
+// closest(), not e.target: a stepper carries its data-f on the wrapper, so
+// keying a number straight into the box would otherwise never autosave.
+document.addEventListener('input', function(e){
+  var el = e.target.closest && e.target.closest('[data-f]');
+  if (el) changed(el);
+});
 
 // Anything inside the Today screen autosaves; the attack form keeps a draft.
 function changed(el){
@@ -677,6 +692,29 @@ function changed(el){
 var T = document.getElementById('s-today');
 var cursor = today();
 
+// Carry the routine answers forward so she isn't re-tapping the same pills nightly.
+// Deliberately NOT the 0-10 scores: a pre-filled fatigue number she taps past is a
+// fabricated data point, and the slope those scores form is the whole point.
+function lastLoggedBefore(dateStr){
+  var keys = Object.keys(daily).filter(function(k){ return k < dateStr; }).sort();
+  return keys.length ? keys[keys.length - 1] : null;
+}
+function prefillFor(dateStr){
+  var k = lastLoggedBefore(dateStr); if (!k) return null;
+  var prev = daily[k], out = {}, carried = [];
+  var gap = Math.round((parseISO(dateStr) - parseISO(k)) / 86400000);
+  if (prev.meds && prev.meds.length){ out.meds = prev.meds.slice(); carried.push('meds'); }
+  // Last value plus the days elapsed. Past 40 the cycle has almost certainly
+  // restarted, so guessing would be worse than leaving it blank for her.
+  if (prev.cycleDay != null){
+    var cd = prev.cycleDay + gap;
+    if (cd <= 40){ out.cycleDay = cd; carried.push('cycle day'); }
+  }
+  if (!carried.length) return null;
+  out._carried = carried.join(' and '); out._from = k;
+  return out;
+}
+
 function renderDay(){
   var lbl = document.getElementById('dayLabel'), sub = document.getElementById('dayDate');
   if (cursor === today())            lbl.textContent = 'Today';
@@ -684,7 +722,17 @@ function renderDay(){
   else                               lbl.textContent = weekday(cursor);
   sub.textContent = pretty(cursor);
   document.getElementById('nextDay').disabled = (cursor >= today());
-  writeForm(T, daily[cursor]);
+
+  var saved = daily[cursor], fill = saved || prefillFor(cursor);
+  writeForm(T, fill);
+  var note = document.getElementById('carry');
+  if (!saved && fill && fill._carried){
+    note.textContent = fill._carried.charAt(0).toUpperCase() + fill._carried.slice(1) +
+                       ' carried over from ' + pretty(fill._from) + ' — change anything that\'s different.';
+    note.style.display = '';
+  } else {
+    note.style.display = 'none';
+  }
 }
 function saveDay(){
   var d = readForm(T);
@@ -849,14 +897,14 @@ function attackCSV(){
   cols.push(plain('hr_lying','hrLying'), plain('hr_standing','hrStanding'),
             plain('bp_lying','bpLying'), plain('bp_standing','bpStanding'),
             plain('hours_since_meal','hrsSinceMeal'), plain('hours_since_gabapentin','hrsSinceGaba'),
-            plain('at_onset','doing'));
+            plain('at_onset','doing'), plain('at_onset_other','doingOther'));
   flags(cols, 'gi', '', ['nausea','vomiting']);
   flags(cols, 'temp', 'temp_', ['hot','cold','swinging']);
   flags(cols, 'cardio', '', ['palpitations','breathless','chest tightness']);
   flags(cols, 'prior24', 'prior24_', ['alcohol','cannabis','aged/fermented food','leftovers','NSAIDs',
                                       'new medication','heat or hot shower','exertion','bad sleep','emotional load']);
   flags(cols, 'helped', 'helped_', ['cannabis','lying down','fluids','salt','dark room','gabapentin','antihistamine','nothing']);
-  cols.push(plain('notes','notes'), plain('logged_at','createdAt'));
+  cols.push(plain('helped_other','helpedOther'), plain('notes','notes'), plain('logged_at','createdAt'));
   var rows = attacks.slice().sort(function(a,b){ return (a.date+(a.onset||'')).localeCompare(b.date+(b.onset||'')); });
   return toCSV(cols, rows);
 }
